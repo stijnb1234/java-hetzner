@@ -25,6 +25,6 @@ public class HetznerApiException extends Exception {
     public String toString() {
         return "HetznerApiException{" +
                 "cause=" + cause +
-                '}';
+                "} " + super.toString();
     }
 }
