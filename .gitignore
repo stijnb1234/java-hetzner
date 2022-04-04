@@ -1,7 +1,2 @@
-/build/
-/.gradle/
-/.settings/
-/bin/
-/.classpath
-/.project
 /.idea/
+/target/*
