@@ -3,9 +3,9 @@ apply plugin: 'java'
 
 // Dependencies' repository
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    compile 'org.slf4j:slf4j-api:1.7.14'
+    compile 'org.slf4j:slf4j-api:1.7.36'
 }
