@@ -2,7 +2,7 @@ Lightweight Java wrapper around OVH's APIs. Handles all the hard work including 
 
 .. code:: java
 
-	import com.ovh.api.OvhApi;
+	import OvhApi;
 	
 	public class OvhApiTest {
 		
@@ -25,7 +25,7 @@ The wrapper accepts and returns raw json Strings. You can serialize/deserialize 
 
 .. code:: java
 
-	import com.ovh.api.OvhApi;
+	import OvhApi;
 	import com.google.gson.Gson;
 	
 	public class OvhApiTest {
