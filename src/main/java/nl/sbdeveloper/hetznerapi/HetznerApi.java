@@ -86,7 +86,7 @@ public class HetznerApi {
             String inputLine;
             BufferedReader in;
             int responseCode = request.getResponseCode();
-            if (responseCode == 200) {
+            if (responseCode == 200 || responseCode == 201) {
                 in = new BufferedReader(new InputStreamReader(request.getInputStream()));
             } else {
                 in = new BufferedReader(new InputStreamReader(request.getErrorStream()));
