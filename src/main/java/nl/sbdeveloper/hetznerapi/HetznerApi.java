@@ -4,8 +4,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 /**
@@ -14,52 +12,57 @@ import java.util.Base64;
  * @author mbsk, SBDeveloper
  */
 public class HetznerApi {
-    private static final String endpoint = "https://robot-ws.your-server.de";
+    private final String endpoint;
     private final String username;
     private final String password;
 
-    public HetznerApi(String username, String password) {
+    public HetznerApi(String url, String username, String password) {
+        endpoint = url;
         this.username = username;
         this.password = password;
     }
 
-    private void assertAllConfigNotNull() throws HetznerApiException {
+    public HetznerApi(String username, String password) {
+        this("https://robot-ws.your-server.de", username, password);
+    }
+
+    private void assertAllConfigNotNull() throws RobotClientException {
         if (username == null || password == null) {
-            throw new HetznerApiException("", HetznerApiException.HetznerApiExceptionCause.CONFIG_ERROR);
+            throw new RobotClientException("API Client Configuration incomplete!");
         }
     }
 
-    public String get(String path) throws HetznerApiException {
+    public String get(String path) throws RobotClientException {
         assertAllConfigNotNull();
         return get(path, "", true);
     }
 
-    public String get(String path, boolean needAuth) throws HetznerApiException {
+    public String get(String path, boolean needAuth) throws RobotClientException {
         assertAllConfigNotNull();
         return get(path, "", needAuth);
     }
 
-    public String get(String path, String body, boolean needAuth) throws HetznerApiException {
+    public String get(String path, String body, boolean needAuth) throws RobotClientException {
         assertAllConfigNotNull();
         return call("GET", body, path, needAuth);
     }
 
-    public String put(String path, String body, boolean needAuth) throws HetznerApiException {
+    public String put(String path, String body, boolean needAuth) throws RobotClientException {
         assertAllConfigNotNull();
         return call("PUT", body, path, needAuth);
     }
 
-    public String post(String path, String body, boolean needAuth) throws HetznerApiException {
+    public String post(String path, String body, boolean needAuth) throws RobotClientException {
         assertAllConfigNotNull();
         return call("POST", body, path, needAuth);
     }
 
-    public String delete(String path, String body, boolean needAuth) throws HetznerApiException {
+    public String delete(String path, String body, boolean needAuth) throws RobotClientException {
         assertAllConfigNotNull();
         return call("DELETE", body, path, needAuth);
     }
 
-    private String call(String method, String body, String path, boolean needAuth) throws HetznerApiException {
+    private String call(String method, String body, String path, boolean needAuth) throws RobotClientException {
         try {
             URL url = new URL(endpoint + path);
 
@@ -68,7 +71,8 @@ public class HetznerApi {
             request.setRequestMethod(method);
             request.setReadTimeout(30000);
             request.setConnectTimeout(30000);
-            request.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            request.setRequestProperty("Accept", "application/json");
+            request.setRequestProperty("User-Agent", "HetznerAPI/" + getClass().getPackage().getImplementationVersion());
             // handle authentification
             if (needAuth) {
 				String encoding = Base64.getEncoder().encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
@@ -83,36 +87,29 @@ public class HetznerApi {
                 out.close();
             }
 
-            String inputLine;
             BufferedReader in;
             int responseCode = request.getResponseCode();
-            if (responseCode == 200) {
-                in = new BufferedReader(new InputStreamReader(request.getInputStream()));
-            } else {
+            if (responseCode >= 400 && responseCode <= 503) {
                 in = new BufferedReader(new InputStreamReader(request.getErrorStream()));
+            } else {
+                in = new BufferedReader(new InputStreamReader(request.getInputStream()));
             }
 
             // build response
+            String inputLine;
             StringBuilder response = new StringBuilder();
             while ((inputLine = in.readLine()) != null) {
                 response.append(inputLine);
             }
             in.close();
 
-            if (responseCode == 200 || responseCode == 201) {
-                // return the raw JSON result
-                return response.toString();
-            } else if (responseCode == 400) {
-                throw new HetznerApiException(response.toString(), HetznerApiException.HetznerApiExceptionCause.BAD_PARAMETERS_ERROR);
-            } else if (responseCode == 403) {
-                throw new HetznerApiException(response.toString(), HetznerApiException.HetznerApiExceptionCause.AUTH_ERROR);
-            } else if (responseCode == 404) {
-                throw new HetznerApiException(response.toString(), HetznerApiException.HetznerApiExceptionCause.RESOURCE_NOT_FOUND);
+            if (responseCode >= 400 && responseCode <= 503) {
+                throw new RobotClientException(response.toString(), responseCode);
             } else {
-                throw new HetznerApiException(response.toString(), HetznerApiException.HetznerApiExceptionCause.API_ERROR);
+                return response.toString();
             }
         } catch (IOException e) {
-            throw new HetznerApiException(e.getMessage(), HetznerApiException.HetznerApiExceptionCause.INTERNAL_ERROR);
+            throw new RobotClientException(e.getMessage());
         }
 	}
 }
